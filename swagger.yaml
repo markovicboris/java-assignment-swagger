@@ -13,14 +13,51 @@ paths:
       tags:
         - Author
       operationId: getAllAuthors
+      parameters:
+        - $ref: '#/components/parameters/pageNumber'
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/sort'
       responses:
         '200':
           content:
             application/json:
               schema: 
-                $ref: '#/components/schemas/Author'
+                $ref: '#/components/schemas/AuthorList'
               example:
-                $ref: '#/components/examples/AuthorList/value'
+                _embedded:
+                  item:
+                    name: William
+                    surname: Shakespeare
+                    numberOfBooks: 100
+                    _links:
+                      self:
+                        href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000'
+                _links:
+                  self:
+                    href: '{{baseURL}}/authors?page=1&size=1&sort=createdAt,desc'
+                  first:
+                    href: '{{baseURL}}/authors?page=1&size=1&sort=createdAt,desc'
+                  next:
+                    href: '{{baseURL}}/authors?page=2&size=1&sort=createdAt,desc'
+                  last:
+                    href: '{{baseURL}}/authors?page=10&size=1&sort=createdAt,desc'
+                page:
+                  size: 1
+                  totalElements: 10
+                  totalPages: 10
+                  number: 1
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              example:
+                message: 'The following sort parameters are not valid: [numberOfB, nam]'
+                status: 400
+
+
+
+
     post:
       summary: Add an Author
       tags:
@@ -32,38 +69,56 @@ paths:
         content:
           application/json:
             schema:
-              properties:
-                name:
-                  type: string
-                  readOnly: true
-                surname:
-                  type: string
-                  readOnly: true
+              $ref: '#/components/schemas/CreateOrUpdateAuthor'
+            example:
+              name: 'Leo'
+              surname: 'Tolstoy'
       responses:
         '201':
-          description: Author successfully created
+          $ref: '#/components/responses/CreatedResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+          
   /authors/{id}:
     put:
       summary: Update Author
       tags:
         - Authors
       operationId: updateAuthor
+      parameters:
+        - $ref: '#/components/parameters/updateId'
       description: Update Author whose id is provided
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              properties:
-                name:
-                  type: string
-                  readOnly: true
-                surname:
-                  type: string
-                  readOnly: true
+              $ref: '#/components/schemas/CreateOrUpdateAuthor'
       responses:
         '200':
           description: Author successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+              example:
+                name: Leo
+                surname: Lerman
+                numberOfBooks: 100
+                _links:
+                  self:
+                    href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000'
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              example:
+                message: 'Author with id 00000000-0000-0000-0000-000000000000 not found'
+                status: 400
+
+
+
   /books:
       get:
         summary: Get all books
@@ -83,12 +138,13 @@ paths:
           '201':
             description: New book created
 
+
+
 components:
 
   schemas:
 
     Author:
-      type: object
       properties:
         name:
           type: string
@@ -100,7 +156,45 @@ components:
           allOf:
             - $ref: '#/components/schemas/SelfLink'
 
-      
+    AuthorList:
+      required:
+        - _links
+        - page
+      properties:
+        _embedded:
+          required: 
+            - item
+          properties:
+            item:
+              type: array
+              items: 
+                $ref: '#/components/schemas/Author'
+        _links:
+          required:
+            - self
+          allOf:
+            - $ref: '#/components/schemas/PaginationLinks'
+            - $ref: '#/components/schemas/SelfLink'
+        page:
+          required:
+            - size
+            - totalElements
+            - totalPages
+            - number
+          allOf:
+            - $ref: '#/components/schemas/Page'
+
+    CreateOrUpdateAuthor:
+      required:
+        - name
+        - surname
+      properties:
+        name: 
+          type: string
+        surname:
+          type: string
+
+
     SelfLink:
       properties:
         self:
@@ -115,31 +209,104 @@ components:
           type: string
           format: uri
 
+    PaginationLinks:
+      properties:
+        first:
+          properties:
+            href:
+              type: string
+              format: uri
+        next:
+          properties:
+            href:
+              type: string
+              format: uri
+        prev:
+          properties:
+            href:
+              type: string
+              format: uri
+        last:
+          properties:
+            href:
+              type: string
+              format: uri
+    Page:
+      properties:
+        size:
+          type: integer
+        totalElements:
+          type: integer
+        totalPages:
+          type: integer
+        number:
+          type: integer
 
-  examples: 
+    ErrorMessage:
+      properties:
+        message:
+          type: string
+        status:
+          type: integer
 
-    Author:
-      value:
-        name: William
-        surname: Shakespeare
-        numberOfBooks: 1
-        _links:
-          self:
-            href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000'
-    AuthorList:
-      value:
-        _embedded:
-          item:
-            - $ref: '#/components/Authors/value'
-        _links:
-          self:
-            href: '{{baseURL}}/authors?page=1&size=10&sort=createdAt,desc'
-          first:
-            href: '{{baseURL}}/authors?page=1&size=10&sort=createdAt,desc'
-          next:
-            href: '{{baseURL}}/authors?page=2&size=10&sort=createdAt,desc'
-          last:
-            href: '{{baseURL}}/authors?page=10&size=10&sort=createdAt,desc'
+  
+  parameters:
 
+    sort:
+      name: sort
+      in: query
+      description: Sort order of results.
+      schema:
+        type: string
+    
+    updateId:
+      name: id
+      in: path
+      required: true
+      description: The id of the resource to update.
+      schema: 
+        type: string
+        format: uuid
 
+    pageNumber:
+      name: page
+      in: query
+      description: Page in pagination odrder to display.
+      schema:
+        type: integer
+        minimum: 1
+
+    pageSize:
+      name: size
+      in: query
+      description: Number of elements on a page.
+      schema:
+        type: integer
+        minimum: 1
         
+  responses:
+
+    CreatedResponse:
+      description: 201 Created Response
+      headers:
+        Location:
+          $ref: '#/components/headers/Location'
+
+    UnauthorizedResponse:
+      description: 401 Unauthorized Error
+      headers:
+        WWW-Authenticate:
+          $ref: '#/components/headers/WWW-Authenticate'
+
+  headers:
+
+    Location:
+      descrition: HTTP Location Header
+      schema:
+        type: string
+    
+    WWW-Authenticate:
+      description: Defines the authentication method that should be used to gain access to a resource.
+      schema:
+        type: string
+        enum: [ Bearer ]
