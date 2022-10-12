@@ -1,25 +1,26 @@
 openapi: '3.0.0'
-info:
+info: 
   title: Book Publishing Service
   description: Spring Boot application for managing a book publishing house. This service exposes a REST API that supports managing authors and publishing books as well as exposing them to the public.
   version: '1.0.0'
-security:
+security: 
   - BarerAuth: [ ]
 paths:
-
+  
   /authors:
-    get:
+    get: 
       summary: Get all authors
       tags:
         - Author
       operationId: getAllAuthors
       responses:
         '200':
-          description: 'List of authors'
           content:
             application/json:
+              schema: 
+                $ref: '#/components/schemas/Author'
               example:
-                - $ref: '#/components/examples/AuthorList/value'
+                $ref: '#/components/examples/AuthorList/value'
     post:
       summary: Add an Author
       tags:
@@ -64,20 +65,81 @@ paths:
         '200':
           description: Author successfully updated
   /books:
-    get:
-      summary: Get all books
-      tags:
-        - Books
-      operationId: getAllBooks
-      responses:
-        '200':
-          description: List of books
-    post:
-      summary: Publish a book
-      tags:
-        - Books
-      operationId: saveBook
-      description: Publish a new book
-      responses:
-        '201':
-          description: New book created
+      get:
+        summary: Get all books
+        tags:
+          - Books
+        operationId: getAllBooks
+        responses:
+          '200': 
+            description: List of books
+      post:
+        summary: Publish a book
+        tags:
+          - Books
+        operationId: saveBook
+        description: Publish a new book
+        responses:
+          '201':
+            description: New book created
+
+components:
+
+  schemas:
+
+    Author:
+      type: object
+      properties:
+        name:
+          type: string
+        surname: 
+          type: string
+        _links:
+          reguired:
+            - self
+          allOf:
+            - $ref: '#/components/schemas/SelfLink'
+
+      
+    SelfLink:
+      properties:
+        self:
+          readOnly: true
+          properties:
+            href:
+              type: string
+              format: uri
+    Href:
+      properties:
+        href:
+          type: string
+          format: uri
+
+
+  examples: 
+
+    Author:
+      value:
+        name: William
+        surname: Shakespeare
+        numberOfBooks: 1
+        _links:
+          self:
+            href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000'
+    AuthorList:
+      value:
+        _embedded:
+          item:
+            - $ref: '#/components/Authors/value'
+        _links:
+          self:
+            href: '{{baseURL}}/authors?page=1&size=10&sort=createdAt,desc'
+          first:
+            href: '{{baseURL}}/authors?page=1&size=10&sort=createdAt,desc'
+          next:
+            href: '{{baseURL}}/authors?page=2&size=10&sort=createdAt,desc'
+          last:
+            href: '{{baseURL}}/authors?page=10&size=10&sort=createdAt,desc'
+
+
+        
