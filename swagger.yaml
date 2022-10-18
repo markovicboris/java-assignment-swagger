@@ -5,9 +5,12 @@ info:
   version: '1.0.0'
 security: 
   - BarerAuth: [ ]
+  
+  
 paths:
   
   /authors:
+  
     get: 
       summary: Get all authors
       tags:
@@ -19,6 +22,7 @@ paths:
         - $ref: '#/components/parameters/sort'
       responses:
         '200':
+          description: 200 OK Response to GET Request
           content:
             application/json:
               schema: 
@@ -28,7 +32,7 @@ paths:
                   item:
                     name: William
                     surname: Shakespeare
-                    numberOfBooks: 100
+                    numOfBooks: 100
                     _links:
                       self:
                         href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000'
@@ -46,22 +50,11 @@ paths:
                   totalElements: 10
                   totalPages: 10
                   number: 1
-        '400':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorMessage'
-              example:
-                message: 'The following sort parameters are not valid: [numberOfB, nam]'
-                status: 400
-
-
-
 
     post:
       summary: Add an Author
       tags:
-        - Authors
+        - Author
       description: Add a new Author
       operationId: saveAuthor
       requestBody:
@@ -76,14 +69,67 @@ paths:
       responses:
         '201':
           $ref: '#/components/responses/CreatedResponse'
+        '400':
+          description: 400 BAD REQUEST Response to POST Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                InvalidMethodArgument:
+                  value:
+                    message: "Invalid method argument. Following validation rules must be applied: {surname=[must not be null]}"
+                    status: 400
+                HttpMessageNotReadable:
+                  value:
+                    message: "Http message is not readable"
+                    status: 400
         '401':
           $ref: '#/components/responses/UnauthorizedResponse'
           
   /authors/{id}:
+  
+    get:
+      summary: Retrieve Author
+      tags:
+        - Author
+      operationId: retrieveAuthor
+      parameters: 
+        - $ref: '#/components/parameters/pathId'
+      responses:
+        '200': 
+          description: 200 OK Response to GET Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Author'
+              example:
+                name: Leo
+                surname: Tolstoy
+                numberOfBooks: 100
+                _links:
+                  self:
+                    href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000'
+        '400':
+          description: 400 BAD REQUEST Response to PUT Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                MismatchedArgumentType:
+                  value:
+                    message: "Mismatched argument type for parameter id with value: not-and-id"
+                    status: 400
+                AuthorNotFound:
+                  value:
+                    message: "Author with id 00000000-0000-0000-0000-000000000000 not found"
+                    status: 404
+  
     put:
       summary: Update Author
       tags:
-        - Authors
+        - Author
       operationId: updateAuthor
       parameters:
         - $ref: '#/components/parameters/updateId'
@@ -96,7 +142,7 @@ paths:
               $ref: '#/components/schemas/CreateOrUpdateAuthor'
       responses:
         '200':
-          description: Author successfully updated
+          description: 200 OK Response to PUT Request
           content:
             application/json:
               schema:
@@ -109,38 +155,236 @@ paths:
                   self:
                     href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000'
         '400':
+          description: 400 BAD REQUEST Response to PUT Request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessage'
-              example:
-                message: 'Author with id 00000000-0000-0000-0000-000000000000 not found'
-                status: 400
+              examples:
+                MismatchedArgumentType:
+                  value:
+                    message: "Mismatched argument type for parameter id with value: not-and-id"
+                    status: 400
+                InvalidMethodArgument:
+                  value:
+                    message: "Invalid method argument. Following validation rules must be applied: {surname=[must not be null]}"
+                    status: 400
+                AuthorNotFound:
+                  value:
+                    message: "Author with id 00000000-0000-0000-0000-000000000000 not found"
+                    status: 404
+                HttpMessageNotReadable:
+                  value:
+                    message: "Http message is not readable"
+                    status: 400
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
 
-
+  /authors/{id}/books:
+  
+    get:
+      summary: Get books for author
+      tags:
+        - Author
+      description: Get all books for a given author
+      operationId: getBooksForAuthor
+      parameters: 
+        - $ref: '#/components/parameters/pathId'
+      responses:
+          '200':
+            description: 200 OK Response to GET request
+            content:
+              application/json:
+                schema: 
+                  $ref: '#/components/schemas/BookList'
+                example:
+                  _embedded:
+                    item:
+                      title: The Forged Coupon
+                      isbn: 123-12345-123-12-1
+                      genre: FICTION
+                      _links:
+                        self:
+                          href: '{{baseURL}}/books/00000000-0000-0000-0000-000000000000'
+                        authors:
+                          href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000'
+                          
+                  _links:
+                    self:
+                      href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000/books'
+                    first:
+                      href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000/books?page=1&size=1&sort=createdAt,desc'
+                    next:
+                      href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000/books?page=2&size=1&sort=createdAt,desc'
+                    last:
+                      href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000/books?page=10&size=1&sort=createdAt,desc'
+                  page:
+                    size: 1
+                    totalElements: 10
+                    totalPages: 10
+                    number: 1
+          '400':
+            description: 400 BAD REQUEST Response to GET Request
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorMessage'
+                example:
+                  message: 'Author with id 00000000-0000-0000-0000-000000000000 not found'
+                  status: 404
 
   /books:
-      get:
-        summary: Get all books
-        tags:
-          - Books
-        operationId: getAllBooks
-        responses:
-          '200': 
-            description: List of books
-      post:
-        summary: Publish a book
-        tags:
-          - Books
-        operationId: saveBook
-        description: Publish a new book
-        responses:
-          '201':
-            description: New book created
-
+  
+    get:
+      summary: Get all books
+      tags:
+        - Book
+      operationId: getAllBooks
+      parameters:
+        - $ref: '#/components/parameters/pageNumber'
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/title'
+        - $ref: '#/components/parameters/isbn'
+        - $ref: '#/components/parameters/genre'
+        - $ref: '#/components/parameters/authorName'
+        - $ref: '#/components/parameters/authorSurname'
+      responses:
+        '200':
+          description: 200 OK Response to GET request
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/BookList'
+              example:
+                _embedded:
+                  item:
+                    title: The Forged Coupon
+                    isbn: 123-12345-123-12-1
+                    genre: FICTION
+                    _links:
+                      self:
+                        href: '{{baseURL}}/books/00000000-0000-0000-0000-000000000000'
+                      authors:
+                        href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000'
+                        
+                _links:
+                  self:
+                    href: '{{baseURL}}/books?page=1&size=1&sort=createdAt,desc'
+                  first:
+                    href: '{{baseURL}}/books?page=1&size=1&sort=createdAt,desc'
+                  next:
+                    href: '{{baseURL}}/books?page=2&size=1&sort=createdAt,desc'
+                  last:
+                    href: '{{baseURL}}/books?page=10&size=1&sort=createdAt,desc'
+                page:
+                  size: 1
+                  totalElements: 10
+                  totalPages: 10
+                  number: 1
+        
+    post:
+      summary: Publish a book
+      tags:
+        - Book
+      operationId: saveBook
+      description: Publish a new book
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PublishBook'
+            example:
+              title: "War and Peace"
+              isbn: "000-00000-000-00-0"
+              genre: DRAMA
+              authors:
+                - href: "{{baseURL}}/authors/00000000-0000-0000-0000-000000000000"
+      responses:
+        '201':
+          $ref: '#/components/responses/CreatedResponse'
+        '400':
+          description: 400 BAD REQUEST Response to POST Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessage'
+              examples:
+                InvalidMethodArgument:
+                  value:
+                    message: "Invalid method argument. Following validation rules must be applied: {genre=[must not be null]}"
+                    status: 400
+                InvalidResource:
+                  value:
+                    message: "The parameter authors is not provided"
+                    status: 400
+                InvalidUuids:
+                  value:
+                    message: "Some of the ids are not valid UUIDs. These are: [00000000-0000-0000-0000-00000000000]"
+                    status:
+                AuthorsDontExist:
+                  value:
+                    message: "For the following ids: [00000000-0000-0000-0000-000000000000], authors don't exist."
+                    status: 404
+                HttpMessageNotReadable:
+                  value:
+                    message: "Http message is not readable"
+                    status: 400
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+  
+  /books/{id}/authors:
+    get:
+      summary: Get authors for book
+      tags:
+        - Book
+      description: Get all authors for a given book
+      operationId: getAuthorsForBook
+      parameters: 
+        - $ref: '#/components/parameters/pathId'
+      responses:
+        '200':
+          description: 200 OK Response to GET Request
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/AuthorList'
+              example:
+                _embedded:
+                  item:
+                    name: William
+                    surname: Shakespeare
+                    numberOfBooks: 100
+                    _links:
+                      self:
+                        href: '{{baseURL}}/authors/00000000-0000-0000-0000-000000000000'
+                _links:
+                  self:
+                    href: '{{baseURL}}/books/00000000-0000-0000-0000-000000000000/authors'
+                  first:
+                    href: '{{baseURL}}/books/00000000-0000-0000-0000-000000000000/authors?page=1&size=1&sort=createdAt,desc'
+                  next:
+                    href: '{{baseURL}}/books/00000000-0000-0000-0000-000000000000/authors?page=2&size=1&sort=createdAt,desc'
+                  last:
+                    href: '{{baseURL}}/books/00000000-0000-0000-0000-000000000000/authors?page=10&size=1&sort=createdAt,desc'
+                page:
+                  size: 1
+                  totalElements: 10
+                  totalPages: 10
+                  number: 1
+        '400':
+            description: 400 BAD REQUEST Response to GET Request
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorMessage'
+                example:
+                  message: 'Book with id 00000000-0000-0000-0000-000000000000 not found'
+                  status: 404
 
 
 components:
+
 
   schemas:
 
@@ -150,8 +394,10 @@ components:
           type: string
         surname: 
           type: string
+        numOfBooks:
+          type: integer
         _links:
-          reguired:
+          required:
             - self
           allOf:
             - $ref: '#/components/schemas/SelfLink'
@@ -183,6 +429,72 @@ components:
             - number
           allOf:
             - $ref: '#/components/schemas/Page'
+    
+    Book:
+      properties:
+        title:
+          type: string
+        isbn: 
+          type: string
+        genre: 
+          type: string
+        _links:
+          required:
+            - self
+          allOf:
+            - $ref: '#/components/schemas/SelfLink'
+            
+    BookList:
+      required:
+        - _links
+        - page
+      properties:
+        _embedded:
+          required: 
+            - item
+          properties:
+            item:
+              type: array
+              items: 
+                $ref: '#/components/schemas/Book'
+        _links:
+          required:
+            - self
+          allOf:
+            - $ref: '#/components/schemas/PaginationLinks'
+            - $ref: '#/components/schemas/SelfLink'
+        page:
+          required:
+            - size
+            - totalElements
+            - totalPages
+            - number
+          allOf:
+            - $ref: '#/components/schemas/Page'
+            
+    PublishBook:
+      required:
+        - title
+        - isbn
+        - genre
+        - authors
+      properties:
+        title:
+          type: string
+        isbn:
+          type: string
+        genre:
+          type: string
+        authors:
+          type: array
+          items: 
+            $ref: '#/components/schemas/AuthorLink'
+    
+    AuthorLink:
+      properties:
+        href:
+          type: string
+          format: uri
 
     CreateOrUpdateAuthor:
       required:
@@ -194,7 +506,6 @@ components:
         surname:
           type: string
 
-
     SelfLink:
       properties:
         self:
@@ -203,11 +514,6 @@ components:
             href:
               type: string
               format: uri
-    Href:
-      properties:
-        href:
-          type: string
-          format: uri
 
     PaginationLinks:
       properties:
@@ -231,6 +537,7 @@ components:
             href:
               type: string
               format: uri
+              
     Page:
       properties:
         size:
@@ -243,12 +550,15 @@ components:
           type: integer
 
     ErrorMessage:
+      required:
+        - message
+        - status
       properties:
         message:
           type: string
         status:
           type: integer
-
+  
   
   parameters:
 
@@ -264,6 +574,15 @@ components:
       in: path
       required: true
       description: The id of the resource to update.
+      schema: 
+        type: string
+        format: uuid
+      
+    pathId:
+      name: id
+      in: path
+      required: true
+      description: The id of the resource to retrieve.
       schema: 
         type: string
         format: uuid
@@ -283,11 +602,47 @@ components:
       schema:
         type: integer
         minimum: 1
+    
+    title:
+      name: title
+      in: query
+      description: Book title.
+      schema:
+        type: string
+
+    isbn:
+      name: isbn
+      in: query
+      description: Book identification number.
+      schema:
+        type: string
+      
+    genre:
+      name: genre
+      in: query
+      description: Book genre.
+      schema:
+        type: string
+    
+    authorName:
+      name: name
+      in: query
+      description: Name of the author.
+      schema:
+        type: string
+    
+    authorSurname:
+      name: surname
+      in: query
+      description: Surname of the author.
+      schema:
+        type: string
+    
         
   responses:
 
     CreatedResponse:
-      description: 201 Created Response
+      description: 201 CREATED Response
       headers:
         Location:
           $ref: '#/components/headers/Location'
@@ -297,11 +652,13 @@ components:
       headers:
         WWW-Authenticate:
           $ref: '#/components/headers/WWW-Authenticate'
+          
+
 
   headers:
 
     Location:
-      descrition: HTTP Location Header
+      description: HTTP Location Header
       schema:
         type: string
     
